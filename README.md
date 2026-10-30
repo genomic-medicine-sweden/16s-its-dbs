@@ -8,3 +8,8 @@ Eventually the goal is to reach consensus about a good common database, so that
 data will become comparable across sites withing GMS, but the infrastructure
 will allow storing and using different versions here while we are working
 towards that vision.
+
+## See also
+
+- [@ikarls's build scripts for Emu databases](https://github.com/ikarls/emu_databases)
+- [Some documentation on how to build a db for Emu in TRANA issue #8](https://github.com/genomic-medicine-sweden/TRANA/issues/8)
