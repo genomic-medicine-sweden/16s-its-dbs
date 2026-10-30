@@ -48,6 +48,9 @@ $(BUILD_DIR)/itsdb.tgz:
 	  | jq -er '.data[0].attributes.media[0].url' \
 	  | xargs -r curl -fL --retry 3 -o $@
 
+$(BUILD_DIR)/sh_general_release_dynamic_19.02.2025.fasta: | $(BUILD_DIR)/itsdb.tgz
+	tar -C $(BUILD_DIR) -zxvf $<
+
 # ------------------------------------------------------------------------------
 #  Misc commands
 # ------------------------------------------------------------------------------
