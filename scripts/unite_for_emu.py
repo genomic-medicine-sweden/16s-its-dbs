@@ -1,11 +1,18 @@
 from Bio import SeqIO
 import pandas as pd
 import os
+import argparse
+
+parser = argparse.ArgumentParser(description="Generate input files from the UNITE database for `emu build-database`")
+parser.add_argument("-f", "--input_fasta", required=True, help="FASTA file from the UNITE general FASTA release")
+parser.add_argument("-n", "--db_name", required=True, help="database name to be added to the sequence IDs")
+parser.add_argument("-o", "--outdir", required=True, help="output directory")
+parser.add_argument("-s", "--sh", action="store_true", help="add UNITE species hypotheses accessions to species names")
+
+args = parser.parse_args()
+os.makedirs(args.outdir, exist_ok=True)
 
 ## define variables
-input_fa_path = "sh_general_release_dynamic_all_19.02.2025_dev.fasta" 
-output_dir_path = os.getcwd()
-database_name = "unite-fungi-19.02.2025-SH"
 tax_headers = ['superkingdom', 'phylum', 'class', 'order', 'family', 'genus', 'species', 'SH'] 
 
 output_records = []
@@ -15,7 +22,7 @@ seq_id_list, tax_id_list = [], []
 tax_dict = {}
 
 # gather dict of unique tax lineages and assign incremented tax_id
-for record in SeqIO.parse(input_fa_path, file_type):
+for record in SeqIO.parse(args.input_fasta, file_type):
     rid = record.id
     tax_lineage = rid.split("|")[4]
     # k__Fungi;p__Ascomycota;c__Sordariomycetes;o__Hypocreales;f__Hypocreaceae;g__Trichoderma;s__Trichoderma_pluripenicillatum
@@ -30,7 +37,7 @@ for record in SeqIO.parse(input_fa_path, file_type):
         tax_counter = tax_counter + 1
 
     # update seq_id info for new fasta file
-    seq_id = f"{database_name}_{seq_counter}"
+    seq_id = f"{args.db_name}_{seq_counter}"
     record.id = seq_id
     seq_counter = seq_counter + 1
     seq_id_list.append(seq_id)
@@ -38,17 +45,17 @@ for record in SeqIO.parse(input_fa_path, file_type):
     output_records.append(record)
 
 # write seq2tax map
-SeqIO.write(output_records,f"{output_dir_path}/emu_input.fa", "fasta")
+SeqIO.write(output_records,f"{args.outdir}/emu_input.fa", "fasta")
 seq_tax_df = pd.DataFrame({'seq_id':seq_id_list,
                             'tax_id':tax_id_list})
 
 
 # write taxonomy lineage .tsv
-seq_tax_df.to_csv(f"{output_dir_path}/seq2tax.map", sep='\t', index=False)
+seq_tax_df.to_csv(f"{args.outdir}/seq2tax.map", sep='\t', index=False)
 
 taxonomy_df = pd.DataFrame({'tax_id':tax_dict.values(),
                             'lineage':tax_dict.keys()})
-tax_temp_df = taxonomy_df['lineage'].str.split(';',7, expand=True)
+tax_temp_df = taxonomy_df['lineage'].str.split(';',n=7, expand=True)
 tax_temp_df = tax_temp_df.rename(columns={0:'kingdom', 1:'phylum',
                                             2:'class', 3:'order',
                                             4:'family', 5:'genus',
@@ -60,4 +67,4 @@ taxonomy_df = taxonomy_df.drop(columns='lineage')
 for col in taxonomy_df.columns:
     if col != 'tax_id' and col != 'SH':
         taxonomy_df[col] = taxonomy_df[col].apply(lambda x:x.split("__",1)[1])
-taxonomy_df.to_csv(f"{output_dir_path}/taxonomy.tsv", sep='\t', index=False)
+taxonomy_df.to_csv(f"{args.outdir}/taxonomy.tsv", sep='\t', index=False)
