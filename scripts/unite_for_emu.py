@@ -13,7 +13,9 @@ args = parser.parse_args()
 os.makedirs(args.outdir, exist_ok=True)
 
 ## define variables
-tax_headers = ['superkingdom', 'phylum', 'class', 'order', 'family', 'genus', 'species', 'SH'] 
+tax_headers = ['superkingdom', 'phylum', 'class', 'order', 'family', 'genus', 'species']
+if args.sh == True:
+    tax_headers.append('SH')
 
 output_records = []
 file_type = "fasta"
@@ -24,12 +26,12 @@ tax_dict = {}
 # gather dict of unique tax lineages and assign incremented tax_id
 for record in SeqIO.parse(args.input_fasta, file_type):
     rid = record.id
+    # FASTA header: >Trichoderma_pluripenicillatum|MN977788|SH1958183.10FU|refs|k__Fungi;p__Ascomycota;c__Sordariomycetes;o__Hypocreales;f__Hypocreaceae;g__Trichoderma;s__Trichoderma_pluripenicillatum
     tax_lineage = rid.split("|")[4]
-    # k__Fungi;p__Ascomycota;c__Sordariomycetes;o__Hypocreales;f__Hypocreaceae;g__Trichoderma;s__Trichoderma_pluripenicillatum
-    # >Glomeraceae|AM076560|SH146432.05FU|refs|k__Fungi;p__Glomeromycota;c__Glomeromycetes;o__Glomerales;f__Glomeraceae;g__;s__uncultured_Glomus
-    sh = rid.split("|")[2]
-    tax_lineage = str(tax_lineage + "_" + sh + ";" + sh)
-    # k__Fungi;p__Ascomycota;c__Sordariomycetes;o__Hypocreales;f__Hypocreaceae;g__Trichoderma;s__Trichoderma_pluripenicillatum_SH1958183.10FU
+
+    if args.sh == True:
+        sh = rid.split("|")[2]
+        tax_lineage = str(tax_lineage + "_" + sh + ";" + sh) # Ex: Trichoderma_pluripenicillatum_SH1958183.10FU
 
     # if new tax_lineage, add new entry
     if tax_lineage not in tax_dict:
