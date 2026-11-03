@@ -14,7 +14,7 @@ os.makedirs(args.outdir, exist_ok=True)
 
 ## define variables
 tax_headers = ['superkingdom', 'phylum', 'class', 'order', 'family', 'genus', 'species']
-if args.sh == True:
+if args.sh:
     tax_headers.append('SH')
 
 output_records = []
@@ -29,7 +29,7 @@ for record in SeqIO.parse(args.input_fasta, file_type):
     # FASTA header: >Trichoderma_pluripenicillatum|MN977788|SH1958183.10FU|refs|k__Fungi;p__Ascomycota;c__Sordariomycetes;o__Hypocreales;f__Hypocreaceae;g__Trichoderma;s__Trichoderma_pluripenicillatum
     tax_lineage = rid.split("|")[4]
 
-    if args.sh == True:
+    if args.sh:
         sh = rid.split("|")[2]
         tax_lineage = str(tax_lineage + "_" + sh + ";" + sh) # Ex: Trichoderma_pluripenicillatum_SH1958183.10FU
 
@@ -67,6 +67,6 @@ taxonomy_df = taxonomy_df.drop(columns='lineage')
 
 # remove rank labeling in tax rank names
 for col in taxonomy_df.columns:
-    if col != 'tax_id' and col != 'SH':
+    if col not in ['tax_id', 'SH']:
         taxonomy_df[col] = taxonomy_df[col].apply(lambda x:x.split("__",1)[1])
 taxonomy_df.to_csv(f"{args.outdir}/taxonomy.tsv", sep='\t', index=False)
