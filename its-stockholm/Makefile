@@ -32,6 +32,8 @@ ITS_DB_NAME := unite-fungi
 ITS_INPUT_FASTA := $(BUILD_DIR)/sh_general_release_dynamic_19.02.2025_dev.fasta
 ITS_CORRECTIONS := corrections.csv
 ITS_CORRECTED_FASTA := $(BUILD_DIR)/corrected.fasta
+ITS_ADDITIONS := additions.fa
+ITS_COMBINED_FASTA := $(BUILD_DIR)/combined.fasta
 
 ITS_CONVERTED_FASTA := $(BUILD_DIR)/emu-$(ITS_DB_NAME)-input.fa
 ITS_SEQ2TAX := $(BUILD_DIR)/seq2tax.map
@@ -67,9 +69,14 @@ $(ITS_INPUT_FASTA): | $(BUILD_DIR)/itsdb.tgz
 $(ITS_CORRECTED_FASTA): $(ITS_INPUT_FASTA) $(ITS_CORRECTIONS)
 	awk -f ../scripts/correct_its_fasta.awk $(ITS_CORRECTIONS) $< > $@
 
+# Add new sequences to the corrected FASTA
+
+$(ITS_COMBINED_FASTA): $(ITS_CORRECTED_FASTA) $(ITS_ADDITIONS)
+	cat $^ > $@
+
 # Convert FASTA into emu build-database input files
 
-$(ITS_DB_FILES) &: $(ITS_INPUT_FASTA)
+$(ITS_DB_FILES) &: $(ITS_COMBINED_FASTA)
 	mkdir -p $(BUILD_DIR)
 	awk \
 		-v db_name="$(ITS_DB_NAME)" \
