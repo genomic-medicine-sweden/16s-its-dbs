@@ -30,6 +30,8 @@ ITS_DB_DOI := 10.15156/BIO/3301229
 ITS_DB_NAME := unite-fungi
 
 ITS_INPUT_FASTA := $(BUILD_DIR)/sh_general_release_dynamic_19.02.2025_dev.fasta
+ITS_CORRECTIONS := corrections.csv
+ITS_CORRECTED_FASTA := $(BUILD_DIR)/corrected.fasta
 
 ITS_CONVERTED_FASTA := $(BUILD_DIR)/emu-$(ITS_DB_NAME)-input.fa
 ITS_SEQ2TAX := $(BUILD_DIR)/seq2tax.map
@@ -60,9 +62,14 @@ $(BUILD_DIR)/itsdb.tgz:
 $(ITS_INPUT_FASTA): | $(BUILD_DIR)/itsdb.tgz
 	tar -C $(BUILD_DIR) -zxvf $(word 1, $|)
 
+# Correct species annotation based on corrections.csv
+
+$(ITS_CORRECTED_FASTA): $(ITS_INPUT_FASTA) $(ITS_CORRECTIONS)
+	awk -f ../scripts/correct_its_fasta.awk $(ITS_CORRECTIONS) $< > $@
+
 # Convert FASTA into emu build-database input files
 
-$(ITS_DB_FILES): $(ITS_INPUT_FASTA)
+$(ITS_DB_FILES): $(ITS_CORRECTED_FASTA)
 	mkdir -p $(BUILD_DIR)
 	awk \
 		-v db_name="$(ITS_DB_NAME)" \
