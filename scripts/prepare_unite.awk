@@ -1,3 +1,20 @@
+# This script converts a UNITE-styled FASTA file into the input files required
+# as input for emu build-database. It extracts taxonomic lineage from the fifth
+# pipe-separated field in each FASTA sequence header, assigns a unique tax_id
+# to each distinct lineage, and assigns each sequence a new ID using the
+# supplied database name.
+#
+# Three files are generated in the specified output directory:
+#   emu-<db_name>-input.fa:     FASTA file with renamed sequence IDs.
+#   seq2tax.map:                Mapping between equence IDs and tax IDs.
+#   tax.tsv:                    Taxonomy table with ranks from species to superkingdom.
+#
+# Required arguments:
+#   -v db_name=DB_NAME          Name used as the prefix for sequence IDs.
+#   -v output_dir=OUTPUT_DIR    Directory where the output files are written.
+#
+# Usage:
+#   awk -v db_name=DB_NAME -v output_dir=OUTPUT_DIR -f prepare_unite.awk input.fasta
 
 BEGIN {
     fasta_out = output_dir "/emu-" db_name "-input.fa"
@@ -20,12 +37,12 @@ BEGIN {
 
     # Assign tax_id to new lineages
     if (!(lineage in tax_ids)) {
-        tax_ids[lineage] = ++tax_counter
+        tax_ids[lineage] = ++tax_counter # Pre-increment tax_counter and assign its value as the tax_id
         lineages[tax_counter] = lineage
     }
 
     # Assign new sequence ID
-    seq_id = db_name "_" ++seq_counter
+    seq_id = db_name "_" ++seq_counter # Pre-increment seq_counter and append its value to db_name
 
     # Write renamed FASTA header
     print ">" seq_id " " seq_header > fasta_out
@@ -33,7 +50,7 @@ BEGIN {
     # Write sequence-to-taxonomy mapping
     print seq_id "\t" tax_ids[lineage] > map_out
 
-    next
+    next # Prevent the header from being processed again by the general block below
 }
 
 # Write FASTA sequence lines unchanged
@@ -47,6 +64,7 @@ END {
 
     # Write one row per unique lineage
     for (i = 1; i <= tax_counter; i++) {
+        # Split the lineage by ';' and store the resulting ranks in the ranks array
         n = split(lineages[i], ranks, ";")
 
         # Remove rank prefixes (e.g. k__, p__, g__)
