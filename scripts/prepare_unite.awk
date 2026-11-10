@@ -17,6 +17,11 @@
 #   awk -v db_name=DB_NAME -v output_dir=OUTPUT_DIR -f prepare_unite.awk input.fasta
 
 BEGIN {
+    if (db_name == "" || output_dir == "" ) {
+        print "Usage: awk -v db_name=DB_NAME -v output_dir=OUTPUT_DIR -f prepare_unite.awk input.fasta"
+        exit 1
+    }
+
     fasta_out = output_dir "/emu-" db_name "-input.fa"
     map_out = output_dir "/seq2tax.map"
     tax_out = output_dir "/tax.tsv"
