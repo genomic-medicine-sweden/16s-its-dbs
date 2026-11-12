@@ -1,8 +1,36 @@
-# Read corrections from CSV
+# This script applies taxonomy corrections to a UNITE-styled FASTA file using
+# a CSV file containing accession IDs, expected original taxonomies, and
+# replacement taxonomies. It checks that the expected original taxonomy
+# matches before applying a correction, replaces the taxonomy lineage, and
+# updates the sequence name to the new species name while preserving all
+# other header fields and sequence lines.
+#
+# Corrections that cannot be applied are reported as warnings:
+#   - Accession IDs not found in the FASTA file.
+#   - Accession IDs where the expected original taxonomy does not match.
+#
+# Required input files:
+#   corrections.csv: CSV file with three columns:
+#       search_for: NCBI Accession ID to search for (second pipe-separated header field).
+#       search:     Expected original taxonomy lineage.
+#       replace:    Replacement taxonomy lineage.
+#   input.fasta:    FASTA file to apply corrections to.
+#
+# Usage:
+#   awk -f correct-its-fasta.awk corrections.csv input.fasta
+
+BEGIN {
+    if (ARGC != 3) {
+        print "Usage: awk -f correct-its-fasta.awk corrections.csv input.fasta"
+        exit 1
+    }
+}
+
+# Read corrections from the first input file (CSV)
 FNR == NR {
     # Skip CSV header
     if (FNR == 1) {
-        next
+        next # Skip the remaining rules and read the next CSV row
     }
 
     # Skip empty lines
@@ -39,7 +67,7 @@ FNR == NR {
     accession = fields[2]
 
     if (accession in corrections) {
-        found[accession] = 1
+        found[accession] = 1 # Track that the accession exists in the FASTA
 
         old_taxonomy = corrections[accession]
         new_taxonomy = replacements[accession]
@@ -48,18 +76,22 @@ FNR == NR {
         position = index(fields[5], old_taxonomy)
         
         if (position) {
-            # Replace the taxonomy lineage
+            # Replace the old taxonomy substring with the new one while preserving the rest of the field
             fields[5] = substr(fields[5], 1, position -1) \
             new_taxonomy \
             substr(fields[5], position + length(old_taxonomy))
 
-            # Update the sequence name using the new species name
-            rank_count = split(new_taxonomy, ranks, ";")
-            fields[1] = ranks[rank_count]
-            sub(/^s__/, "", fields[1])
-            fields[1] = ">" fields[1]
+            # Split the new taxonomy by ';' and store the resulting ranks in the ranks array
+            rank_count = split(new_taxonomy, ranks, ";") #
 
-            applied[accession] = 1
+            # Replace the original sequence name with the species name from the last rank
+            fields[1] = ranks[rank_count]
+
+            # Remove the species rank prefix
+            sub(/^s__/, "", fields[1])
+
+            # Restore the FASTA header marker (>) before the new sequence name
+            fields[1] = ">" fields[1]
 
             print "Corrected " accession > "/dev/stderr"
         } else {
@@ -76,7 +108,7 @@ FNR == NR {
     }
 
     print header
-    next
+    next # Prevent the header from being printed again by the general rule
 }
 
 # Print all non-header lines unchanged
@@ -85,7 +117,7 @@ FNR == NR {
 }
 
 END {
-    # Report corrections whose accession IDs were not found
+    # Report corrections whose accession IDs were never found in the FASTA
     for (accession in corrections) {
         if (!(accession in found)) {
             print "WARNING: Accession " accession \
